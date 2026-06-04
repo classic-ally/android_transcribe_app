@@ -30,4 +30,6 @@
 
     <string name="setting_pause_audio">Pause audio</string>
     <string name="setting_pause_audio_desc">Pause audio while recording</string>
+
+    <string name="recognition_service_label">Offline Voice Input</string>
 </resources>
