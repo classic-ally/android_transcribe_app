@@ -43,13 +43,13 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="16dp"/>
 
-            <!-- Permission Card (Visible if needed) -->
+            <!-- 1. Voice input readiness card (primary flow: keyboard mic / web voice
+                 search fire RECOGNIZE_SPEECH, which RecognizeActivity handles). The
+                 status text/icon and button visibility are set in MainActivity. -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_permissions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:visibility="gone"
                 app:contentPadding="16dp">
 
                 <LinearLayout
@@ -57,31 +57,72 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/perm_mic_title"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
-                        android:textColor="?attr/colorError"
-                        android:layout_marginBottom="4dp"/>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_mic"
+                            android:contentDescription="@string/section_voice"
+                            app:tint="?attr/colorPrimary"
+                            android:layout_marginEnd="12dp"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/section_voice"
+                            android:textAppearance="?attr/textAppearanceTitleLarge"/>
+
+                        <ImageView
+                            android:id="@+id/img_voice_status"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_check_circle"
+                            android:contentDescription="@string/section_voice"
+                            app:tint="@color/status_ok"/>
+                    </LinearLayout>
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:id="@+id/text_voice_status"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/perm_mic_desc"
+                        android:text="@string/voice_status_ready"
                         android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
 
+                    <!-- Shown only when RECORD_AUDIO is missing. -->
                     <Button
-                        android:id="@+id/btn_grant_perms"
+                        android:id="@+id/btn_voice_grant"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/btn_grant"/>
+                        android:text="@string/btn_voice_grant"
+                        android:visibility="gone"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- One-tap self-test: fires the real RECOGNIZE_SPEECH intent. -->
+                    <Button
+                        android:id="@+id/btn_voice_try"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_voice_try"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_voice_help"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_voice_help"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- IME Card -->
+            <!-- 2. Subtitles Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -104,34 +145,86 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="@string/section_ime"
+                            android:text="@string/section_subs"
                             android:textAppearance="?attr/textAppearanceTitleLarge"/>
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/ic_mic"
-                            android:contentDescription="@string/section_ime"
+                            android:src="@android:drawable/ic_media_play"
+                            android:contentDescription="@string/section_subs"
                             app:tint="?attr/colorPrimary"/>
                     </LinearLayout>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/desc_ime"
+                        android:text="@string/desc_subs"
                         android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
 
                     <Button
-                        android:id="@+id/btn_ime_settings"
+                        android:id="@+id/btn_subs_start"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/btn_ime_settings"/>
+                        android:text="@string/btn_subs_start"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Settings Card -->
+            <!-- 3. Appearance Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:contentPadding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/section_appearance"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
+                        android:layout_marginBottom="8dp"/>
+
+                    <RadioGroup
+                        android:id="@+id/rg_theme"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_system"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/theme_system"
+                            android:textAppearance="?attr/textAppearanceBodyLarge"
+                            android:paddingVertical="6dp"/>
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_light"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/theme_light"
+                            android:textAppearance="?attr/textAppearanceBodyLarge"
+                            android:paddingVertical="6dp"/>
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_dark"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/theme_dark"
+                            android:textAppearance="?attr/textAppearanceBodyLarge"
+                            android:paddingVertical="6dp"/>
+                    </RadioGroup>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 4. Settings Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -260,59 +353,8 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Appearance Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:contentPadding="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/section_appearance"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:layout_marginBottom="8dp"/>
-
-                    <RadioGroup
-                        android:id="@+id/rg_theme"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <com.google.android.material.radiobutton.MaterialRadioButton
-                            android:id="@+id/rb_theme_system"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/theme_system"
-                            android:textAppearance="?attr/textAppearanceBodyLarge"
-                            android:paddingVertical="6dp"/>
-
-                        <com.google.android.material.radiobutton.MaterialRadioButton
-                            android:id="@+id/rb_theme_light"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/theme_light"
-                            android:textAppearance="?attr/textAppearanceBodyLarge"
-                            android:paddingVertical="6dp"/>
-
-                        <com.google.android.material.radiobutton.MaterialRadioButton
-                            android:id="@+id/rb_theme_dark"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/theme_dark"
-                            android:textAppearance="?attr/textAppearanceBodyLarge"
-                            android:paddingVertical="6dp"/>
-                    </RadioGroup>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Subtitles Card -->
+            <!-- 5. Alternative: dedicated Voice keyboard (IME). De-emphasised, placed
+                 below the primary flow as an optional way to use voice input. -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -335,34 +377,35 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="@string/section_subs"
+                            android:text="@string/section_ime"
                             android:textAppearance="?attr/textAppearanceTitleLarge"/>
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@android:drawable/ic_media_play"
-                            android:contentDescription="@string/section_subs"
-                            app:tint="?attr/colorPrimary"/>
+                            android:src="@drawable/ic_keyboard_switch"
+                            android:contentDescription="@string/section_ime"
+                            app:tint="?attr/colorOnSurfaceVariant"/>
                     </LinearLayout>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/desc_subs"
+                        android:text="@string/desc_ime"
                         android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
 
-                    <Button
-                        android:id="@+id/btn_subs_start"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_ime_settings"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/btn_subs_start"/>
+                        android:text="@string/btn_ime_settings"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Status Footer -->
+            <!-- Status Footer (native engine warm-up state) -->
             <TextView
                 android:id="@+id/text_status"
                 android:layout_width="match_parent"

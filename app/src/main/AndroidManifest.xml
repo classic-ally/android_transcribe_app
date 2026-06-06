@@ -8,6 +8,15 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Package visibility (Android 11+): lets resolveActivity()/queryIntentActivities()
+         for the speech intent see other handlers, so MainActivity can tell whether this
+         app is the resolved handler or a chooser would appear. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
     <application
         android:name=".App"
         android:label="Offline Voice Input"

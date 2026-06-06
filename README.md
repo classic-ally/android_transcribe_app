@@ -1,6 +1,6 @@
 # Offline Voice Input (Android)
 
-An offline, privacy-focused voice input keyboard and live subtitle tool for Android, built with Rust.
+An offline, privacy-focused speech-to-text tool for Android, built with Rust. Tap the microphone on the keyboard you already use — your speech is transcribed entirely on-device and typed into any app. Also includes live subtitles and an optional dedicated voice keyboard.
 
 [<img src="https://i.ibb.co/q0mdc4Z/get-it-on-github.png"
 alt="Get it on GitHub"
@@ -11,19 +11,43 @@ height="80">](https://play.google.com/store/apps/details?id=dev.notune.transcrib
 
 ## Features
 
-- **Offline Transcription:** Uses deep learning models (Parakeet TDT) to transcribe speech entirely on-device.
-- **Supported Languages:** Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish, Swedish, Russian, Ukrainian
-- **Voice Input Keyboard** Use your voice as a text field input method.
+- **Voice input in any app:** Tap the microphone on the keyboard you already use (SwiftKey, etc.) or a website's voice search, and your speech is transcribed straight into the text field. The app registers as your device's speech-to-text provider.
+- **100% offline & private:** The Parakeet TDT model runs entirely on-device — no audio ever leaves your phone, and no network is required.
 - **Live Subtitles:** Real-time captions for any audio/video playing on your device.
-- **Privacy-First:** No audio data leaves your device.
+- **Optional voice keyboard:** A built-in keyboard you can switch to for voice input wherever you prefer it.
+- **Supported Languages:** Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish, Swedish, Russian, Ukrainian.
 - **Rust Backend:** Efficient and safe native code using [transcribe-rs](https://github.com/cjpais/transcribe-rs).
 
 ## Screenshots
+
 <p float="left">
   <img src=".screenshots/screenshot_home.png" width="30%" />
-  <img src=".screenshots/screenshot_ime.png" width="30%" />
-  <img src=".screenshots/screenshot_subtitles.png" width="30%" /> 
+  <img src=".screenshots/screenshot_recording.png" width="30%" />
+  <img src=".screenshots/screenshot_subtitles.png" width="30%" />
 </p>
+
+## Usage
+
+### Voice input in any app (recommended)
+
+1. Open **Offline Voice Input** once and grant the microphone permission. The home screen shows a **Voice input** status — green when you're ready to go.
+2. In any app, tap the **microphone** on your keyboard (e.g. Microsoft SwiftKey) or the voice-search mic on a website. Offline Voice Input opens, you speak, and your words are inserted as text.
+
+This works because the app registers as the system speech-to-text provider, so the recognizer your keyboard already uses routes to it. Tap **Try voice input** on the home screen to test the whole flow in one tap.
+
+**If your keyboard opens its own voice typing instead** (its speech never reaches this app):
+
+- **SwiftKey:** Settings → *Rich input* → turn off **Multi-modal voice typing** so it falls back to the system voice input.
+- If Android shows a chooser, pick **Offline Voice Input** and tap **Always**.
+- If another app always opens, clear its default in *Settings → Apps*.
+
+### Dedicated voice keyboard (optional)
+
+Prefer voice input as its own keyboard? Enable the **Offline Voice Input** keyboard via *Open Keyboard Settings* on the home screen, switch to it from your keyboard switcher, then tap **Tap to Record**.
+
+### Live subtitles
+
+Tap **Start Live Subtitles** and choose *Share entire screen* to get real-time, on-device captions for any audio or video playing on your device.
 
 ## Prerequisites
 
