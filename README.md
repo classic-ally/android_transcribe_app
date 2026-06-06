@@ -35,6 +35,8 @@ height="80">](https://play.google.com/store/apps/details?id=dev.notune.transcrib
 
 This works because the app registers as the system speech-to-text provider, so the recognizer your keyboard already uses routes to it. Tap **Try voice input** on the home screen to test the whole flow in one tap.
 
+> **Not every keyboard works.** A keyboard has to be able to hand voice input to other apps. **Gboard** only uses Google's own voice typing, so it can't use Offline Voice Input — use **SwiftKey**, or the built-in voice keyboard below.
+
 **If your keyboard opens its own voice typing instead** (its speech never reaches this app):
 
 - **SwiftKey:** Settings → *Rich input* → turn off **Multi-modal voice typing** so it falls back to the system voice input.
