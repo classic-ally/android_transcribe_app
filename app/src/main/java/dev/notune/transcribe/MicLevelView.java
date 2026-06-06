@@ -3,15 +3,24 @@ package dev.notune.transcribe;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.View;
 
+import com.google.android.material.color.MaterialColors;
+
+/**
+ * Pulsing glow that reacts to the mic level (0..1). The glow color follows the
+ * Material 3 theme (colorPrimary), so it matches the app, the keyboard, and the
+ * recognizer popup in both light and dark mode.
+ */
 public class MicLevelView extends View {
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float current = 0f;   // 0..1
     private float target = 0f;    // 0..1
+    private int baseColor = Color.WHITE;
     private ValueAnimator animator;
 
     public MicLevelView(Context c) { super(c); init(); }
@@ -20,12 +29,21 @@ public class MicLevelView extends View {
 
     private void init() {
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(0xFFFFFFFF); // white, we set the alpha dynamically
+        // Resolve the theme's primary color from the (Material-themed) context.
+        baseColor = MaterialColors.getColor(this,
+                com.google.android.material.R.attr.colorPrimary, Color.WHITE);
+        paint.setColor(baseColor);
     }
-
 
     private float dp(float v) {
         return v * getResources().getDisplayMetrics().density;
+    }
+
+    /** Override the glow color (defaults to the theme's colorPrimary). */
+    public void setColor(int color) {
+        baseColor = color;
+        paint.setColor(color);
+        invalidate();
     }
 
     /** level: 0..1 */
@@ -57,16 +75,15 @@ public class MicLevelView extends View {
         float extra = min * 0.28f * current;
         float r = base + extra;
 
-        // Inner bright circle (makes the center brighter)
-        int alphaInner = (int) (50 + 90 * current);  // 50..140
+        // Inner brighter ring
+        int alphaInner = (int) (45 + 90 * current);  // 45..135
+        paint.setColor(baseColor);
         paint.setAlpha(alphaInner);
         canvas.drawCircle(cx, cy, r, paint);
 
         // Outer soft glow (larger, more transparent)
-        int alphaOuter = (int) (18 + 45 * current);  // 18..63
+        int alphaOuter = (int) (16 + 40 * current);  // 16..56
         paint.setAlpha(alphaOuter);
         canvas.drawCircle(cx, cy, r * 1.25f, paint);
     }
-
-
 }

@@ -80,7 +80,19 @@ if (!isBundle) {
 }
 
 dependencies {
+    // Material Components (Material 3 / Material You). Pulls in AppCompat.
+    implementation("com.google.android.material:material:1.12.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
+
+    // Material/AppCompat transitively pull the legacy kotlin-stdlib-jdk7/jdk8:1.6.21
+    // (via kotlinx-coroutines-android), whose classes were folded into
+    // kotlin-stdlib in Kotlin 1.8 — causing duplicate-class build failures.
+    // Align them with the resolved kotlin-stdlib (1.8.22), where they are empty
+    // stubs. See https://kotlinlang.org/docs/whatsnew18.html#kotlin-stdlib
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22")
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22")
+    }
 }
 
 // Dedicated configuration to resolve the ORT AAR for the Rust build

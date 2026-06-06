@@ -11,9 +11,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.content.pm.PackageManager;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 
-public class RecognizeActivity extends Activity {
+public class RecognizeActivity extends AppCompatActivity {
 
     private static final String TAG = "OfflineVoiceInput";
 

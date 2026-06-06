@@ -9,4 +9,12 @@
     <color name="white">#FFFFFF</color>
     <color name="record_red">#F44336</color>
     <color name="overlay_bg">#99000000</color>
+    <color name="card_bg">#FFFFFF</color>
+
+    <!-- Keyboard / IME (overridden in values-night) -->
+    <color name="ime_bg">#F0F0F0</color>
+    <color name="ime_card_bg">#FFFFFF</color>
+    <color name="ime_text">#333333</color>
+    <color name="ime_hint">#888888</color>
+    <color name="ime_key_bg">#DDDDDD</color>
 </resources>

@@ -9,8 +9,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".App"
         android:label="Offline Voice Input"
         android:icon="@drawable/icon"
+        android:theme="@style/AppTheme"
         android:hasCode="true">
 
         <!-- Main Activity -->
@@ -40,7 +42,7 @@
             android:exported="true"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
-            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">
+            android:theme="@style/AppTheme">
 
             <intent-filter>
                 <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
@@ -55,7 +57,7 @@
             android:exported="true"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
-            android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+            android:theme="@style/AppTheme">
 
             <!-- Handle "Share" from other apps -->
             <intent-filter>

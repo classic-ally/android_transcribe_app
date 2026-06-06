@@ -1,6 +1,7 @@
 package dev.notune.transcribe;
 
 import android.inputmethodservice.InputMethodService;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
@@ -15,7 +16,12 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.view.MotionEvent;
 import android.view.inputmethod.EditorInfo;
+import android.content.res.ColorStateList;
+import android.view.ContextThemeWrapper;
 import java.io.File;
+
+import com.google.android.material.color.DynamicColors;
+import com.google.android.material.color.MaterialColors;
 
 public class RustInputMethodService extends InputMethodService {
     
@@ -41,6 +47,11 @@ public class RustInputMethodService extends InputMethodService {
     private View enterButton;
     private View switchKeyboardButton;
     private View inputView;
+    private MicLevelView micLevelView;
+    private View recordCircle;
+    // Night flag the current input view was inflated with, so it can be rebuilt
+    // if the theme preference changes while this process stays alive.
+    private boolean viewIsNight = false;
     private Handler mainHandler;
     private boolean isRecording = false;
     private boolean pendingSwitchBack = false;
@@ -71,8 +82,9 @@ public class RustInputMethodService extends InputMethodService {
         Log.d(TAG, "Service onCreate");
         try {
             initNative(this);
-        } catch (Exception e) {
-            Log.e(TAG, "Error in initNative", e);
+        } catch (Throwable t) {
+            // Native may be unavailable (e.g. wrong-ABI emulator); don't crash the IME.
+            Log.e(TAG, "Error in initNative", t);
         }
     }
 
@@ -80,7 +92,15 @@ public class RustInputMethodService extends InputMethodService {
     public View onCreateInputView() {
         Log.d(TAG, "onCreateInputView");
         try {
-            View view = getLayoutInflater().inflate(R.layout.ime_layout, null);
+            // The IME is a non-AppCompat Service in a separate process, so
+            // AppCompat's delegate can't theme it. Build a context that is
+            // night-aware (per the saved preference), wears the Material 3 theme,
+            // and picks up Material You dynamic color — matching the app.
+            Context night = ThemePrefs.wrapForNight(this, ThemePrefs.getMode(this));
+            viewIsNight = ThemePrefs.isNight(night);
+            Context themed = DynamicColors.wrapContextIfAvailable(
+                    new ContextThemeWrapper(night, R.style.AppTheme));
+            View view = LayoutInflater.from(themed).inflate(R.layout.ime_layout, null);
             inputView = view;
 
             // Handle window insets for avoiding navigation bar overlap
@@ -95,6 +115,8 @@ public class RustInputMethodService extends InputMethodService {
             progressBar = view.findViewById(R.id.ime_progress);
             recordContainer = view.findViewById(R.id.ime_record_container);
             micIcon = view.findViewById(R.id.ime_mic_icon);
+            micLevelView = view.findViewById(R.id.ime_mic_level);
+            recordCircle = view.findViewById(R.id.ime_record_circle);
             hintView = view.findViewById(R.id.ime_hint);
             backspaceButton = view.findViewById(R.id.ime_backspace);
             spaceButton = view.findViewById(R.id.ime_space);
@@ -223,6 +245,7 @@ public class RustInputMethodService extends InputMethodService {
                 }
             });
 
+            tintRecordButton(false);
             updateUiState();
             return view;
         } catch (Exception e) {
@@ -277,6 +300,12 @@ public class RustInputMethodService extends InputMethodService {
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         inputActive = true;
+        // Rebuild the keyboard if the theme preference changed while this
+        // (long-lived) IME process stayed alive, so it matches the app setting.
+        if (inputView != null
+                && ThemePrefs.isNight(ThemePrefs.wrapForNight(this, ThemePrefs.getMode(this))) != viewIsNight) {
+            setInputView(onCreateInputView());
+        }
         // A field is focused and the input connection is live again — commit any
         // text that finished transcribing while nothing was focused.
         flushPendingText();
@@ -295,14 +324,31 @@ public class RustInputMethodService extends InputMethodService {
         if (inputView != null) {
             inputView.setKeepScreenOn(recording);
         }
+        tintRecordButton(recording);
         if (recording) {
-            micIcon.setColorFilter(0xFFF44336); // Red
             statusView.setText("Listening...");
             hintView.setText("Tap to Stop");
         } else {
-            micIcon.setColorFilter(0xFF2196F3); // Blue
             statusView.setText("Processing...");
             hintView.setText("Tap to Record");
+            if (micLevelView != null) micLevelView.setLevel(0f);
+        }
+    }
+
+    /** Tints the round record button + mic: idle = primary, recording = error. */
+    private void tintRecordButton(boolean recording) {
+        int circleAttr = recording
+                ? com.google.android.material.R.attr.colorPrimary
+                : com.google.android.material.R.attr.colorPrimaryContainer;
+        int iconAttr = recording
+                ? com.google.android.material.R.attr.colorOnPrimary
+                : com.google.android.material.R.attr.colorOnPrimaryContainer;
+        if (recordCircle != null) {
+            recordCircle.setBackgroundTintList(ColorStateList.valueOf(
+                    MaterialColors.getColor(recordCircle, circleAttr)));
+        }
+        if (micIcon != null) {
+            micIcon.setColorFilter(MaterialColors.getColor(micIcon, iconAttr));
         }
     }
 
@@ -431,7 +477,11 @@ public class RustInputMethodService extends InputMethodService {
             pendingCommitText = null;
         }
     }
-    public void onAudioLevel(float level) { }
+    public void onAudioLevel(float level) {
+        if (micLevelView != null) {
+            mainHandler.post(() -> micLevelView.setLevel(level));
+        }
+    }
 
     private boolean isPauseAudioEnabled() {
         return new File(getFilesDir(), "pause_audio").exists();

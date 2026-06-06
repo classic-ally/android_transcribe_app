@@ -1,6 +1,5 @@
 package dev.notune.transcribe;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -11,12 +10,17 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
-import android.widget.Switch;
+import android.widget.RadioGroup;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+
 import java.io.File;
 import java.io.IOException;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERM_REQ_CODE = 101;
 
@@ -58,7 +62,7 @@ public class MainActivity extends Activity {
             startActivity(intent);
         });
 
-        Switch autoRecordSwitch = findViewById(R.id.switch_auto_record);
+        CompoundButton autoRecordSwitch = findViewById(R.id.switch_auto_record);
         File autoRecordFile = new File(getFilesDir(), "auto_record");
         autoRecordSwitch.setChecked(autoRecordFile.exists());
         autoRecordSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -73,7 +77,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        Switch selectTranscriptionSwitch = findViewById(R.id.switch_select_transcription);
+        CompoundButton selectTranscriptionSwitch = findViewById(R.id.switch_select_transcription);
         File selectTranscriptionFile = new File(getFilesDir(), "select_transcription");
         selectTranscriptionSwitch.setChecked(selectTranscriptionFile.exists());
         selectTranscriptionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -88,7 +92,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        Switch pauseAudioSwitch = findViewById(R.id.switch_pause_audio);
+        CompoundButton pauseAudioSwitch = findViewById(R.id.switch_pause_audio);
         File pauseAudioFile = new File(getFilesDir(), "pause_audio");
         pauseAudioSwitch.setChecked(pauseAudioFile.exists());
         pauseAudioSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -100,6 +104,32 @@ public class MainActivity extends Activity {
                 }
             } else {
                 pauseAudioFile.delete();
+            }
+        });
+
+        RadioGroup themeGroup = findViewById(R.id.rg_theme);
+        switch (ThemePrefs.getMode(this)) {
+            case AppCompatDelegate.MODE_NIGHT_NO:
+                themeGroup.check(R.id.rb_theme_light);
+                break;
+            case AppCompatDelegate.MODE_NIGHT_YES:
+                themeGroup.check(R.id.rb_theme_dark);
+                break;
+            default:
+                themeGroup.check(R.id.rb_theme_system);
+                break;
+        }
+        themeGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            int newMode;
+            if (checkedId == R.id.rb_theme_light) {
+                newMode = AppCompatDelegate.MODE_NIGHT_NO;
+            } else if (checkedId == R.id.rb_theme_dark) {
+                newMode = AppCompatDelegate.MODE_NIGHT_YES;
+            } else {
+                newMode = AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+            }
+            if (newMode != ThemePrefs.getMode(this)) {
+                ThemePrefs.setMode(this, newMode);
             }
         });
 

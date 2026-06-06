@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1F2937"
+    android:background="?attr/colorSurface"
+    android:fitsSystemWindows="true"
     android:padding="24dp">
 
     <!-- Close (discard) -->
     <ImageButton
         android:id="@+id/btn_close"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_gravity="top|end"
-        android:background="@android:color/transparent"
+        android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Close"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:tint="#FFFFFF" />
+        android:src="@drawable/ic_close"
+        app:tint="?attr/colorOnSurfaceVariant" />
 
-    <!-- Center mic + ring -->
+    <!-- Center mic + level glow -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -25,27 +27,34 @@
 
         <dev.notune.transcribe.MicLevelView
             android:id="@+id/mic_level"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
             android:layout_gravity="center" />
+
+        <View
+            android:layout_width="128dp"
+            android:layout_height="128dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_record_circle" />
 
         <ImageView
             android:id="@+id/mic_icon"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
             android:layout_gravity="center"
-            android:src="@android:drawable/ic_btn_speak_now"
-            android:tint="#FFFFFF" />
+            android:src="@drawable/ic_mic"
+            android:contentDescription="@string/section_ime"
+            app:tint="?attr/colorOnPrimaryContainer" />
 
         <TextView
             android:id="@+id/txt_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="18dp"
+            android:layout_marginBottom="32dp"
             android:text="Listening... (Tap to stop)"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp" />
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textAppearance="?attr/textAppearanceTitleMedium" />
     </FrameLayout>
 
 </FrameLayout>

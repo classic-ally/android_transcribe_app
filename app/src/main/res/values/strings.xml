@@ -32,4 +32,9 @@
     <string name="setting_pause_audio_desc">Pause audio while recording</string>
 
     <string name="recognition_service_label">Offline Voice Input</string>
+
+    <string name="section_appearance">Appearance</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
 </resources>
