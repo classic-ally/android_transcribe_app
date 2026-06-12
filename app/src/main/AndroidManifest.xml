@@ -51,7 +51,8 @@
             android:exported="true"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
-            android:theme="@style/AppTheme">
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/AppTheme.VoicePanel">
 
             <intent-filter>
                 <action android:name="android.speech.action.RECOGNIZE_SPEECH" />

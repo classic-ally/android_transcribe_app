@@ -62,17 +62,7 @@ public class RecognizeActivity extends AppCompatActivity {
         });
 
         // Tap anywhere (or on mic) to stop
-        findViewById(R.id.root).setOnClickListener(v -> {
-            if (isRecording) {
-                isRecording = false;
-                status.setText("Processing...");
-                stopRecording();
-                if (pauseAudioActive) {
-                    audioPauser.abandon(this);
-                    pauseAudioActive = false;
-                }
-            }
-        });
+        findViewById(R.id.root).setOnClickListener(v -> finishRecording());
 
         // Permission check
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
@@ -88,7 +78,44 @@ public class RecognizeActivity extends AppCompatActivity {
             audioPauser.request(this);
             pauseAudioActive = true;
         }
-        startRecording();
+        startRecording(isAutoStopEnabled());
+    }
+
+    /** Stop capture and transcribe — used by both tap-to-stop and auto-stop. */
+    private void finishRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        status.setText("Processing...");
+        stopRecording();
+        if (pauseAudioActive) {
+            audioPauser.abandon(this);
+            pauseAudioActive = false;
+        }
+    }
+
+    // Called from Rust (monitor thread) when trailing silence is detected.
+    public void onAutoStop() {
+        runOnUiThread(this::finishRecording);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // The popup is no longer visible (user switched apps or went home).
+        // It runs in its own task (singleTask), so it would otherwise keep
+        // recording invisibly in the background and never reappear. Discard
+        // and close so the next mic tap starts fresh. (Background recording
+        // is a keyboard-only feature; a popup must not record unseen.)
+        if (isRecording && !isFinishing()) {
+            isRecording = false;
+            try { cancelRecording(); } catch (Throwable t) { /* ignore */ }
+            if (pauseAudioActive) {
+                audioPauser.abandon(this);
+                pauseAudioActive = false;
+            }
+            setResult(Activity.RESULT_CANCELED);
+            finish();
+        }
     }
 
     @Override
@@ -103,16 +130,18 @@ public class RecognizeActivity extends AppCompatActivity {
 
     // Called from Rust
     public void onStatusUpdate(String s) {
-        final String shown;
-        if ("Ready".equals(s)) {
-            shown = "Ready (Tap to stop)";
-        } else if ("Listening...".equals(s)) {
-            shown = "Listening... (Tap to stop)";
-        } else {
-            shown = s;
-        }
-
-        runOnUiThread(() -> status.setText(shown));
+        runOnUiThread(() -> {
+            final String shown;
+            if ("Ready".equals(s)) {
+                // The model-ready status can arrive after recording started.
+                shown = isRecording ? "Listening... (Tap to stop)" : "Ready";
+            } else if ("Listening...".equals(s)) {
+                shown = "Listening... (Tap to stop)";
+            } else {
+                shown = s;
+            }
+            status.setText(shown);
+        });
     }
 
     // Called from Rust with 0..1
@@ -123,6 +152,13 @@ public class RecognizeActivity extends AppCompatActivity {
     // Called from Rust – keep same method name as IME for code reuse
     public void onTextTranscribed(String text) {
         runOnUiThread(() -> {
+            if (text == null || text.trim().isEmpty()) {
+                // Nothing was recognized (e.g. auto-stop after silence only).
+                setResult(Activity.RESULT_CANCELED);
+                finish();
+                return;
+            }
+
             ArrayList<String> results = new ArrayList<>();
             results.add(text);
 
@@ -138,10 +174,15 @@ public class RecognizeActivity extends AppCompatActivity {
         return new java.io.File(getFilesDir(), "pause_audio").exists();
     }
 
+    /** Opt-in via the "Auto-stop after silence" setting (default off). */
+    private boolean isAutoStopEnabled() {
+        return new java.io.File(getFilesDir(), "auto_stop").exists();
+    }
+
     // Native methods
     private native void initNative(RecognizeActivity activity);
     private native void cleanupNative();
-    private native void startRecording();
+    private native void startRecording(boolean autoStop);
     private native void stopRecording();
     private native void cancelRecording();
 }

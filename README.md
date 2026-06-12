@@ -31,21 +31,28 @@ height="80">](https://play.google.com/store/apps/details?id=dev.notune.transcrib
 ### Voice input in any app (recommended)
 
 1. Open **Offline Voice Input** once and grant the microphone permission. The home screen shows a **Voice input** status — green when you're ready to go.
-2. In any app, tap the **microphone** on your keyboard (e.g. Microsoft SwiftKey) or the voice-search mic on a website. Offline Voice Input opens, you speak, and your words are inserted as text.
+2. In any app, tap the **microphone** on your keyboard (e.g. Microsoft SwiftKey) or the voice-search mic on a website. A compact panel slides up over the app you're in, you speak, and your words are inserted as text. Tap to stop — or enable *Auto-stop after silence* in the app's settings to have it stop by itself.
 
-This works because the app registers as the system speech-to-text provider, so the recognizer your keyboard already uses routes to it. Tap **Try voice input** on the home screen to test the whole flow in one tap.
+The app plugs into Android's speech-to-text in **three** ways, so it works with a wide range of keyboards and apps:
 
-> **Not every keyboard works.** A keyboard has to be able to hand voice input to other apps. **Gboard** only uses Google's own voice typing, so it can't use Offline Voice Input — use **SwiftKey**, or the built-in voice keyboard below.
+| Path | Who uses it | What happens |
+|---|---|---|
+| **Voice-input popup** (`RECOGNIZE_SPEECH`) | SwiftKey, website voice search, many apps | The compact bottom panel opens over the current app |
+| **System speech service** (`RecognitionService`) | Keyboards/apps using Android's `SpeechRecognizer` | Recognition runs invisibly in the background with automatic endpointing |
+| **Voice keyboard (IME)** | Any keyboard, via the keyboard switcher — also HeliBoard/AnySoftKeyboard-style "switch to voice IME" mic keys | The dedicated voice keyboard opens |
 
-**If your keyboard opens its own voice typing instead** (its speech never reaches this app):
+Tap **Try voice input** on the home screen to test the whole flow in one tap.
 
-- **SwiftKey:** Settings → *Rich input* → turn off **Multi-modal voice typing** so it falls back to the system voice input.
-- If Android shows a chooser, pick **Offline Voice Input** and tap **Always**.
-- If another app always opens, clear its default in *Settings → Apps*.
+**Keyboard notes:**
+
+- **SwiftKey:** works out of the box. If SwiftKey's own voice typing opens instead, go to SwiftKey Settings → *Rich input* → turn off **Multi-modal voice typing**.
+- **HeliBoard / AnySoftKeyboard / OpenBoard:** their mic key switches to the system *voice input keyboard* — enable the **Offline Voice Input** keyboard (see below) and it will be used automatically.
+- **Gboard:** only uses Google's own voice typing, so it can't hand speech to this app. Use one of the keyboards above, or the built-in voice keyboard.
+- If Android shows a chooser, pick **Offline Voice Input** and tap **Always**. If another app always opens, clear its default in *Settings → Apps*.
 
 ### Dedicated voice keyboard (optional)
 
-Prefer voice input as its own keyboard? Enable the **Offline Voice Input** keyboard via *Open Keyboard Settings* on the home screen, switch to it from your keyboard switcher, then tap **Tap to Record**.
+Prefer voice input as its own keyboard? Enable the **Offline Voice Input** keyboard via *Open Keyboard Settings* on the home screen, switch to it from your keyboard switcher, then tap **Tap to Record**. By default the recording keeps running even if you switch apps or the keyboard closes (turn off *Record in background* in settings if you don't want that) — the text is inserted when you come back.
 
 ### Live subtitles
 

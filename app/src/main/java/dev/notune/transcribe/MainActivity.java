@@ -78,49 +78,29 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        CompoundButton autoRecordSwitch = findViewById(R.id.switch_auto_record);
-        File autoRecordFile = new File(getFilesDir(), "auto_record");
-        autoRecordSwitch.setChecked(autoRecordFile.exists());
-        autoRecordSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                try {
-                    autoRecordFile.createNewFile();
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to create auto_record file", e);
-                }
-            } else {
-                autoRecordFile.delete();
-            }
-        });
+        // Settings stored as marker files in filesDir (readable from the :ime
+        // process and native code without a content provider).
+        bindMarkerSwitch(R.id.switch_auto_record, "auto_record", false);
+        bindMarkerSwitch(R.id.switch_select_transcription, "select_transcription", false);
+        bindMarkerSwitch(R.id.switch_pause_audio, "pause_audio", false);
+        // Record-in-background defaults to ON; its marker file is the opt-out.
+        bindMarkerSwitch(R.id.switch_record_background, "stop_on_hide", true);
+        bindMarkerSwitch(R.id.switch_auto_stop, "auto_stop", false);
 
-        CompoundButton selectTranscriptionSwitch = findViewById(R.id.switch_select_transcription);
-        File selectTranscriptionFile = new File(getFilesDir(), "select_transcription");
-        selectTranscriptionSwitch.setChecked(selectTranscriptionFile.exists());
-        selectTranscriptionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                try {
-                    selectTranscriptionFile.createNewFile();
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to create select_transcription file", e);
-                }
-            } else {
-                selectTranscriptionFile.delete();
-            }
-        });
-
-        CompoundButton pauseAudioSwitch = findViewById(R.id.switch_pause_audio);
-        File pauseAudioFile = new File(getFilesDir(), "pause_audio");
-        pauseAudioSwitch.setChecked(pauseAudioFile.exists());
-        pauseAudioSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                try {
-                    pauseAudioFile.createNewFile();
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to create pause_audio file", e);
-                }
-            } else {
-                pauseAudioFile.delete();
-            }
+        // Live subtitle line limit: 2 (default), 4, or 0 = unlimited.
+        RadioGroup subsLinesGroup = findViewById(R.id.rg_subtitle_lines);
+        int subsLines = SubtitlePrefs.getMaxLines(this);
+        if (subsLines == 4) {
+            subsLinesGroup.check(R.id.rb_subs_4);
+        } else if (subsLines == 0) {
+            subsLinesGroup.check(R.id.rb_subs_all);
+        } else {
+            subsLinesGroup.check(R.id.rb_subs_2);
+        }
+        subsLinesGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            int lines = checkedId == R.id.rb_subs_4 ? 4
+                    : checkedId == R.id.rb_subs_all ? 0 : 2;
+            SubtitlePrefs.setMaxLines(this, lines);
         });
 
         RadioGroup themeGroup = findViewById(R.id.rg_theme);
@@ -261,6 +241,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void snackbar(String message) {
         Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
+    }
+
+    /**
+     * Binds a switch to a marker file in filesDir. With {@code inverted}, the
+     * file's presence means the switch is OFF (used for default-on settings).
+     */
+    private void bindMarkerSwitch(int switchId, String fileName, boolean inverted) {
+        CompoundButton sw = findViewById(switchId);
+        File marker = new File(getFilesDir(), fileName);
+        sw.setChecked(marker.exists() != inverted);
+        sw.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            boolean shouldExist = isChecked != inverted;
+            if (shouldExist) {
+                try {
+                    marker.createNewFile();
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to create " + fileName + " file", e);
+                }
+            } else {
+                marker.delete();
+            }
+        });
     }
 
     private void checkAndRequestPermissions() {

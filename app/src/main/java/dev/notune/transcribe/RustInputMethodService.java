@@ -197,6 +197,11 @@ public class RustInputMethodService extends InputMethodService {
                 InputConnection ic = getCurrentInputConnection();
                 if (ic != null) {
                     android.view.inputmethod.EditorInfo editorInfo = getCurrentInputEditorInfo();
+                    if (editorInfo == null) {
+                        ic.sendKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER));
+                        ic.sendKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER));
+                        return;
+                    }
                     int imeOptions = editorInfo.imeOptions;
                     int action = imeOptions & android.view.inputmethod.EditorInfo.IME_MASK_ACTION;
                     boolean noEnterAction = (imeOptions & android.view.inputmethod.EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0;
@@ -259,7 +264,13 @@ public class RustInputMethodService extends InputMethodService {
     @Override
     public void onWindowShown() {
         super.onWindowShown();
-        if (!isRecording && new File(getFilesDir(), "auto_record").exists()) {
+        if (isRecording) {
+            // A background recording is still running (record-in-background
+            // setting): restore the recording UI.
+            updateRecordButtonUI(true);
+            return;
+        }
+        if (new File(getFilesDir(), "auto_record").exists()) {
             if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
                     == PackageManager.PERMISSION_GRANTED) {
                 if (isPauseAudioEnabled()) {
@@ -276,13 +287,20 @@ public class RustInputMethodService extends InputMethodService {
     public void onWindowHidden() {
         super.onWindowHidden();
         if (isRecording) {
-            try {
-                cancelRecording();
-            } catch (Throwable t) {
-                Log.w(TAG, "cancelRecording failed, falling back to stopRecording", t);
-                try { stopRecording(); } catch (Throwable ignored) { }
+            if (isStopOnHideEnabled()) {
+                // Opt-in behavior: discard the recording when the keyboard hides.
+                try {
+                    cancelRecording();
+                } catch (Throwable t) {
+                    Log.w(TAG, "cancelRecording failed, falling back to stopRecording", t);
+                    try { stopRecording(); } catch (Throwable ignored) { }
+                }
+                updateRecordButtonUI(false);
+            } else {
+                // Default: keep recording in the background. The transcription
+                // is committed on return (or held in pendingCommitText).
+                return;
             }
-            updateRecordButtonUI(false);
         }
         if (pauseAudioActive) {
             audioPauser.abandon(this);
@@ -424,6 +442,20 @@ public class RustInputMethodService extends InputMethodService {
     // Called from Rust
     public void onTextTranscribed(String text) {
         mainHandler.post(() -> {
+            if (text == null || text.trim().isEmpty()) {
+                // Nothing recognized — don't insert a stray space.
+                updateRecordButtonUI(false);
+                if (statusView != null) statusView.setText("Tap to Record");
+                if (pauseAudioActive) {
+                    audioPauser.abandon(this);
+                    pauseAudioActive = false;
+                }
+                if (pendingSwitchBack) {
+                    pendingSwitchBack = false;
+                    switchToPreviousInputMethod();
+                }
+                return;
+            }
             String committed = text + " ";
             InputConnection ic = getCurrentInputConnection();
             if (inputActive && ic != null) {
@@ -485,5 +517,10 @@ public class RustInputMethodService extends InputMethodService {
 
     private boolean isPauseAudioEnabled() {
         return new File(getFilesDir(), "pause_audio").exists();
+    }
+
+    /** "Record in background" is default ON; the marker file is the opt-out. */
+    private boolean isStopOnHideEnabled() {
+        return new File(getFilesDir(), "stop_on_hide").exists();
     }
 }

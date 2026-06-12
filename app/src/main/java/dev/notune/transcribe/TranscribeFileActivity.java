@@ -110,6 +110,9 @@ public class TranscribeFileActivity extends AppCompatActivity {
                 startDecodeAndTranscribe();
             } else {
                 statusText.setText(status);
+                if (status != null && status.startsWith("Error")) {
+                    progressBar.setVisibility(View.GONE);
+                }
             }
         });
     }
@@ -144,7 +147,7 @@ public class TranscribeFileActivity extends AppCompatActivity {
             try {
                 float[] samples = decodeAudioToSamples(audioUri);
                 if (samples == null || samples.length == 0) {
-                    runOnUiThread(() -> statusText.setText("Error: Could not decode audio file"));
+                    showError("Error: Could not decode audio file");
                     return;
                 }
 
@@ -153,9 +156,16 @@ public class TranscribeFileActivity extends AppCompatActivity {
 
             } catch (Exception e) {
                 Log.e(TAG, "Error decoding audio", e);
-                runOnUiThread(() -> statusText.setText("Error: " + e.getMessage()));
+                showError("Error: " + e.getMessage());
             }
         }).start();
+    }
+
+    private void showError(String message) {
+        runOnUiThread(() -> {
+            statusText.setText(message);
+            progressBar.setVisibility(View.GONE);
+        });
     }
 
     /**

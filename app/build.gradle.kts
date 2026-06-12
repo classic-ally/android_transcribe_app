@@ -13,8 +13,8 @@ android {
         applicationId = "dev.notune.transcribe"
         minSdk = 26
         targetSdk = 35
-        versionCode = 17
-        versionName = "0.1.16"
+        versionCode = 18
+        versionName = "0.1.17"
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -163,6 +163,10 @@ val cargoNdkBuild by tasks.registering(Exec::class) {
     }
 
     outputs.dir(jniLibsDir)
+    // No input tracking — always run and let cargo's own incremental build
+    // decide what to recompile (a no-op cargo invocation is fast). Without
+    // this, Gradle sees unchanged outputs and skips Rust rebuilds entirely.
+    outputs.upToDateWhen { false }
 }
 
 // Wire the cargo-ndk build into the Android build lifecycle
