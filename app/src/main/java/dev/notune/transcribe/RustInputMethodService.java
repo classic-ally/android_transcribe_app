@@ -50,6 +50,7 @@ public class RustInputMethodService extends InputMethodService {
     private View spaceButton;
     private View enterButton;
     private View switchKeyboardButton;
+    private View discardButton;
     private View inputView;
     private MicLevelView micLevelView;
     private View recordCircle;
@@ -127,6 +128,26 @@ public class RustInputMethodService extends InputMethodService {
             spaceButton = view.findViewById(R.id.ime_space);
             enterButton = view.findViewById(R.id.ime_enter);
             switchKeyboardButton = view.findViewById(R.id.ime_switch_keyboard);
+            discardButton = view.findViewById(R.id.ime_discard);
+
+            discardButton.setOnClickListener(v -> {
+                if (!isRecording) return;
+                // Throw away the recording: cancel clears the audio buffer in
+                // native and never fires onTextTranscribed, so nothing is
+                // committed. updateRecordButtonUI(false) resets the UI and
+                // clears any streaming preview.
+                try {
+                    cancelRecording();
+                } catch (Throwable t) {
+                    Log.w(TAG, "cancelRecording failed", t);
+                }
+                if (pauseAudioActive) {
+                    audioPauser.abandon(this);
+                    pauseAudioActive = false;
+                }
+                updateRecordButtonUI(false);
+                if (statusView != null) statusView.setText("Tap to Record");
+            });
 
             switchKeyboardButton.setOnClickListener(v -> {
                 if (isRecording) {
@@ -250,7 +271,7 @@ public class RustInputMethodService extends InputMethodService {
                         audioPauser.request(this);
                         pauseAudioActive = true;
                     }
-                    startRecording(isStreamPreviewEnabled());
+                    startRecording(isStreamPreviewEnabled(), PreviewPrefs.getTickMs(this));
                     updateRecordButtonUI(true);
                 }
             });
@@ -282,7 +303,7 @@ public class RustInputMethodService extends InputMethodService {
                     audioPauser.request(this);
                     pauseAudioActive = true;
                 }
-                startRecording(isStreamPreviewEnabled());
+                startRecording(isStreamPreviewEnabled(), PreviewPrefs.getTickMs(this));
                 updateRecordButtonUI(true);
             }
         }
@@ -348,6 +369,10 @@ public class RustInputMethodService extends InputMethodService {
             inputView.setKeepScreenOn(recording);
         }
         tintRecordButton(recording);
+        // The discard button only makes sense while a recording is in flight.
+        if (discardButton != null) {
+            discardButton.setVisibility(recording ? View.VISIBLE : View.GONE);
+        }
         if (recording) {
             statusView.setText("Listening...");
             hintView.setText("Tap to Stop");
@@ -394,7 +419,7 @@ public class RustInputMethodService extends InputMethodService {
     // Native methods
     private native void initNative(RustInputMethodService service);
     private native void cleanupNative();
-    private native void startRecording(boolean preview);
+    private native void startRecording(boolean preview, int previewTickMs);
     private native void stopRecording();
     private native void cancelRecording();
 

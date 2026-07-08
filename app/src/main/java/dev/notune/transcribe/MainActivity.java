@@ -88,6 +88,20 @@ public class MainActivity extends AppCompatActivity {
         bindMarkerSwitch(R.id.switch_auto_stop, "auto_stop", false);
         bindMarkerSwitch(R.id.switch_stream_preview, "stream_preview", false);
 
+        // Live streaming preview refresh interval (ms). The label echoes the
+        // current value; the slider writes it via PreviewPrefs.
+        TextView previewIntervalLabel = findViewById(R.id.label_preview_interval);
+        com.google.android.material.slider.Slider previewSlider =
+                findViewById(R.id.slider_preview_interval);
+        int tickMs = PreviewPrefs.getTickMs(this);
+        previewSlider.setValue(tickMs);
+        previewIntervalLabel.setText(getString(R.string.preview_interval_value, tickMs));
+        previewSlider.addOnChangeListener((slider, value, fromUser) -> {
+            int ms = (int) value;
+            PreviewPrefs.setTickMs(this, ms);
+            previewIntervalLabel.setText(getString(R.string.preview_interval_value, ms));
+        });
+
         // Live subtitle line limit: 2 (default), 4, or 0 = unlimited.
         RadioGroup subsLinesGroup = findViewById(R.id.rg_subtitle_lines);
         int subsLines = SubtitlePrefs.getMaxLines(this);

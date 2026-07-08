@@ -19,8 +19,15 @@ const AUTO_STOP_SILENCE_MS: u64 = 2000;
 /// If no speech is ever detected, auto-stop after this long.
 const AUTO_STOP_NO_SPEECH_MS: u64 = 8000;
 
-/// How often the optional live preview re-transcribes the recent audio.
-const PREVIEW_TICK_MS: u64 = 700;
+/// Default preview refresh interval, used when the caller passes 0. The actual
+/// value comes from the "Preview refresh interval" slider. This is the
+/// *minimum* gap between passes; the worker is single-in-flight, so on a slow
+/// device the real cadence is bounded by inference latency, not this value.
+const PREVIEW_TICK_MS_DEFAULT: u64 = 300;
+/// Clamp for the caller-supplied interval, guarding against a 0/busy-loop or an
+/// absurdly large value.
+const PREVIEW_TICK_MS_MIN: u64 = 100;
+const PREVIEW_TICK_MS_MAX: u64 = 2000;
 /// Trailing audio the preview transcribes each tick (~15s at 16kHz). Bounds the
 /// preview's cost regardless of how long the dictation runs; the final commit
 /// still transcribes the full buffer, so committed text is never truncated.
@@ -127,6 +134,7 @@ pub fn start_recording(
     state: &mut VoiceSessionState,
     auto_stop: bool,
     preview: bool,
+    preview_tick_ms: u64,
 ) {
     let host = cpal::default_host();
     let device = match host.default_input_device() {
@@ -223,6 +231,11 @@ pub fn start_recording(
             // ever calls onPartialText — the authoritative text still comes from
             // stop_recording's single full-buffer inference.
             if preview {
+                let tick_ms = if preview_tick_ms == 0 {
+                    PREVIEW_TICK_MS_DEFAULT
+                } else {
+                    preview_tick_ms.clamp(PREVIEW_TICK_MS_MIN, PREVIEW_TICK_MS_MAX)
+                };
                 let jvm = state.jvm.clone();
                 let target_ref = state.target_ref.clone();
                 let audio_buffer = state.audio_buffer.clone();
@@ -230,7 +243,7 @@ pub fn start_recording(
                 std::thread::spawn(move || {
                     let mut last_len = 0usize;
                     loop {
-                        std::thread::sleep(Duration::from_millis(PREVIEW_TICK_MS));
+                        std::thread::sleep(Duration::from_millis(tick_ms));
                         if !session_active.load(Ordering::SeqCst) {
                             return;
                         }

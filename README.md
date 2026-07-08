@@ -30,10 +30,20 @@ Key properties by design:
 - **The committed text is still authoritative.** On stop, the app runs the same single
   full-buffer transcription as upstream and commits that. The preview cannot truncate or
   corrupt the committed result.
-- **Bounded cost.** Each preview pass transcribes only a trailing ~15s window and refreshes
-  roughly every 0.7s. The worker is single-in-flight, so it self-throttles on slower
-  devices (a slow pass just means a less frequent refresh); the final commit is never
-  affected. Because it runs extra inference, the feature is opt-in.
+- **Bounded cost.** Each preview pass transcribes only a trailing ~15s window. The worker
+  is single-in-flight, so it self-throttles on slower devices (a slow pass just means a
+  less frequent refresh); the final commit is never affected. Because it runs extra
+  inference, the feature is opt-in.
+- **Configurable refresh interval.** A slider (**Settings → Preview refresh interval**,
+  150–1000 ms, default 300) sets how often the preview updates. Perceived latency is the
+  interval *plus* per-pass inference time, so on a slower device dragging the slider below
+  the model's inference time just runs passes back-to-back — you reach the device's compute
+  floor rather than a fixed wall.
+
+This fork also adds a **discard button** to the voice keyboard: while recording, a small ✕
+appears that cancels the recording and throws away the captured audio without committing any
+text — so a misfire no longer has to be deleted by hand. (It reuses upstream's existing
+cancel path, which clears the buffer and never emits a transcription.)
 
 ## How it works
 
@@ -45,6 +55,8 @@ Key properties by design:
 | Keyboard UI | `RustInputMethodService.java` | Reads the opt-in setting, receives `onPartialText`, and renders it in the italic strip. The final commit path is unchanged. |
 | Layout | `res/layout/ime_layout.xml` | A single-line italic `ime_preview_text` strip (start-ellipsized so the most recent words stay visible), hidden unless a preview arrives. |
 | Setting | `MainActivity.java`, `res/layout/activity_main.xml`, `res/values/strings.xml` | The opt-in "Live streaming preview" toggle (marker-file backed, like the other settings). |
+| Refresh interval | `PreviewPrefs.java` + slider in `activity_main.xml`; threaded through `startRecording(boolean, int)` → `ime.rs` → `start_recording(.., tick_ms)` | File-backed int (same cross-process pattern as `SubtitlePrefs`); Rust clamps it and falls back to the 300 ms default. |
+| Discard button | `RustInputMethodService.java`, `res/layout/ime_layout.xml` | A ✕ shown only while recording; calls the existing `cancelRecording` JNI path (clears the buffer, no commit). |
 
 The Parakeet model and the `transcribe-rs` inference API are untouched — the stateless
 `transcribe_samples` call serves both the preview passes and the final commit.

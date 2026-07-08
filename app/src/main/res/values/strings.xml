@@ -33,8 +33,15 @@
     <string name="setting_auto_stop">Auto-stop after silence</string>
     <string name="setting_auto_stop_desc">End the voice input popup automatically ~2 seconds after you stop speaking</string>
 
+    <string name="ime_discard">Discard recording</string>
+
     <string name="setting_stream_preview">Live streaming preview</string>
     <string name="setting_stream_preview_desc">Show a live italic preview of your words while dictating on the keyboard. Uses extra battery and compute.</string>
+
+    <string name="setting_preview_interval">Preview refresh interval</string>
+    <string name="setting_preview_interval_desc">How often the live preview updates. Lower is more responsive but uses more compute; on slower devices the real rate is capped by how fast the model runs.</string>
+    <!-- %1$d is the interval in milliseconds -->
+    <string name="preview_interval_value">Refresh every %1$d ms</string>
 
     <string name="setting_subtitle_lines">Subtitle length</string>
     <string name="setting_subtitle_lines_desc">How many lines the live subtitles show; older text scrolls away</string>

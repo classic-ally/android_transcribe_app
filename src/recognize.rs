@@ -34,8 +34,8 @@ pub unsafe extern "system" fn Java_dev_notune_transcribe_RecognizeActivity_start
 ) {
     let mut guard = RECOG_STATE.lock().unwrap();
     if let Some(state) = guard.as_mut() {
-        // The recognize popup has no preview strip.
-        voice_session::start_recording(env, state, auto_stop != 0, false);
+        // The recognize popup has no preview strip (interval unused).
+        voice_session::start_recording(env, state, auto_stop != 0, false, 0);
     }
 }
 

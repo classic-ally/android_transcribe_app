@@ -30,12 +30,14 @@ pub unsafe extern "system" fn Java_dev_notune_transcribe_RustInputMethodService_
     env: JNIEnv,
     _class: JClass,
     preview: jni::sys::jboolean,
+    preview_tick_ms: jni::sys::jint,
 ) {
     let mut guard = IME_STATE.lock().unwrap();
     if let Some(state) = guard.as_mut() {
         // The IME keyboard is manual tap-to-stop; no silence auto-stop. The
-        // preview flag mirrors the opt-in "Live streaming preview" setting.
-        voice_session::start_recording(env, state, false, preview != 0);
+        // preview flag + interval mirror the opt-in "Live streaming preview"
+        // setting and its refresh-interval slider.
+        voice_session::start_recording(env, state, false, preview != 0, preview_tick_ms as u64);
     }
 }
 
