@@ -33,6 +33,9 @@
     <string name="setting_auto_stop">Auto-stop after silence</string>
     <string name="setting_auto_stop_desc">End the voice input popup automatically ~2 seconds after you stop speaking</string>
 
+    <string name="setting_stream_preview">Live streaming preview</string>
+    <string name="setting_stream_preview_desc">Show a live italic preview of your words while dictating on the keyboard. Uses extra battery and compute.</string>
+
     <string name="setting_subtitle_lines">Subtitle length</string>
     <string name="setting_subtitle_lines_desc">How many lines the live subtitles show; older text scrolls away</string>
     <string name="subtitle_lines_2">2 lines</string>

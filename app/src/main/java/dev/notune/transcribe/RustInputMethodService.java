@@ -39,6 +39,10 @@ public class RustInputMethodService extends InputMethodService {
 
     private TextView statusView;
     private TextView hintView;
+    // Italic single-line strip showing the in-progress transcription while
+    // dictating (opt-in "Live streaming preview"). Cosmetic only: it is never
+    // committed — the authoritative text is committed by onTextTranscribed.
+    private TextView previewView;
     private View recordContainer;
     private android.widget.ImageView micIcon;
     private ProgressBar progressBar;
@@ -112,6 +116,7 @@ public class RustInputMethodService extends InputMethodService {
             });
 
             statusView = view.findViewById(R.id.ime_status_text);
+            previewView = view.findViewById(R.id.ime_preview_text);
             progressBar = view.findViewById(R.id.ime_progress);
             recordContainer = view.findViewById(R.id.ime_record_container);
             micIcon = view.findViewById(R.id.ime_mic_icon);
@@ -245,7 +250,7 @@ public class RustInputMethodService extends InputMethodService {
                         audioPauser.request(this);
                         pauseAudioActive = true;
                     }
-                    startRecording();
+                    startRecording(isStreamPreviewEnabled());
                     updateRecordButtonUI(true);
                 }
             });
@@ -277,7 +282,7 @@ public class RustInputMethodService extends InputMethodService {
                     audioPauser.request(this);
                     pauseAudioActive = true;
                 }
-                startRecording();
+                startRecording(isStreamPreviewEnabled());
                 updateRecordButtonUI(true);
             }
         }
@@ -350,6 +355,12 @@ public class RustInputMethodService extends InputMethodService {
             statusView.setText("Processing...");
             hintView.setText("Tap to Record");
             if (micLevelView != null) micLevelView.setLevel(0f);
+            // Recording ended: drop any in-progress preview so stale text never
+            // lingers behind the committed result.
+            if (previewView != null) {
+                previewView.setText("");
+                previewView.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -383,7 +394,7 @@ public class RustInputMethodService extends InputMethodService {
     // Native methods
     private native void initNative(RustInputMethodService service);
     private native void cleanupNative();
-    private native void startRecording();
+    private native void startRecording(boolean preview);
     private native void stopRecording();
     private native void cancelRecording();
 
@@ -515,8 +526,24 @@ public class RustInputMethodService extends InputMethodService {
         }
     }
 
+    // Called from Rust with an in-progress preview hypothesis. Cosmetic only:
+    // shown in the italic strip, never committed to the input connection.
+    public void onPartialText(String partial) {
+        mainHandler.post(() -> {
+            if (previewView == null || !isRecording) return;
+            if (partial == null || partial.trim().isEmpty()) return;
+            previewView.setText(partial);
+            previewView.setVisibility(View.VISIBLE);
+        });
+    }
+
     private boolean isPauseAudioEnabled() {
         return new File(getFilesDir(), "pause_audio").exists();
+    }
+
+    /** Opt-in "Live streaming preview" setting (default off). */
+    private boolean isStreamPreviewEnabled() {
+        return new File(getFilesDir(), "stream_preview").exists();
     }
 
     /** "Record in background" is default ON; the marker file is the opt-out. */

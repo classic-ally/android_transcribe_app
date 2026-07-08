@@ -33,6 +33,24 @@
             android:visibility="gone"/>
     </LinearLayout>
 
+    <!-- Live streaming preview strip (opt-in). Italic = in-progress, not yet
+         committed. Single line, ellipsized at the start so the most recent
+         words stay visible. Hidden unless a preview hypothesis arrives. -->
+    <TextView
+        android:id="@+id/ime_preview_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="20dp"
+        android:visibility="gone"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textStyle="italic"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:ellipsize="start"
+        android:paddingHorizontal="4dp"
+        android:paddingBottom="4dp"/>
+
     <!-- Record area: pulsing mic-level glow behind a circular record button -->
     <FrameLayout
         android:id="@+id/ime_record_container"

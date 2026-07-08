@@ -19,6 +19,13 @@ const AUTO_STOP_SILENCE_MS: u64 = 2000;
 /// If no speech is ever detected, auto-stop after this long.
 const AUTO_STOP_NO_SPEECH_MS: u64 = 8000;
 
+/// How often the optional live preview re-transcribes the recent audio.
+const PREVIEW_TICK_MS: u64 = 700;
+/// Trailing audio the preview transcribes each tick (~15s at 16kHz). Bounds the
+/// preview's cost regardless of how long the dictation runs; the final commit
+/// still transcribes the full buffer, so committed text is never truncated.
+const PREVIEW_WINDOW_SAMPLES: usize = 15 * 16000;
+
 pub struct SendStream(#[allow(dead_code)] pub cpal::Stream);
 unsafe impl Send for SendStream {}
 unsafe impl Sync for SendStream {}
@@ -68,6 +75,20 @@ fn notify_text(env: &mut JNIEnv, obj: &JObject, text: &str) {
     }
 }
 
+/// Deliver an in-progress preview hypothesis. Purely cosmetic: the Java side
+/// shows it in the italic preview strip and never commits it. The authoritative
+/// text is still produced once by `notify_text` on stop.
+fn notify_partial(env: &mut JNIEnv, obj: &JObject, text: &str) {
+    if let Ok(jtxt) = env.new_string(text) {
+        let _ = env.call_method(
+            obj,
+            "onPartialText",
+            "(Ljava/lang/String;)V",
+            &[(&jtxt).into()],
+        );
+    }
+}
+
 pub fn init_session(env: JNIEnv, target: JObject) -> VoiceSessionState {
     android_logger::init_once(
         android_logger::Config::default().with_max_level(log::LevelFilter::Info),
@@ -101,7 +122,12 @@ pub fn init_session(env: JNIEnv, target: JObject) -> VoiceSessionState {
 /// for trailing silence after speech (or a no-speech timeout) and invokes the
 /// Java-side `onAutoStop()` callback, which is expected to stop the recording
 /// the same way a manual tap would.
-pub fn start_recording(mut env: JNIEnv, state: &mut VoiceSessionState, auto_stop: bool) {
+pub fn start_recording(
+    mut env: JNIEnv,
+    state: &mut VoiceSessionState,
+    auto_stop: bool,
+    preview: bool,
+) {
     let host = cpal::default_host();
     let device = match host.default_input_device() {
         Some(d) => d,
@@ -190,6 +216,56 @@ pub fn start_recording(mut env: JNIEnv, state: &mut VoiceSessionState, auto_stop
             s.play().ok();
             state.stream = Some(SendStream(s));
             notify_status(&mut env, state.target_ref.as_obj(), "Listening...");
+
+            // Optional live preview: re-transcribe the recent audio on a timer
+            // and push it to the UI. Single-in-flight (one synchronous pass per
+            // loop iteration), so it self-throttles and never queues up. It only
+            // ever calls onPartialText — the authoritative text still comes from
+            // stop_recording's single full-buffer inference.
+            if preview {
+                let jvm = state.jvm.clone();
+                let target_ref = state.target_ref.clone();
+                let audio_buffer = state.audio_buffer.clone();
+                let session_active = state.session_active.clone();
+                std::thread::spawn(move || {
+                    let mut last_len = 0usize;
+                    loop {
+                        std::thread::sleep(Duration::from_millis(PREVIEW_TICK_MS));
+                        if !session_active.load(Ordering::SeqCst) {
+                            return;
+                        }
+                        let buf = audio_buffer.lock().unwrap().clone();
+                        // Skip if no new audio arrived since the last pass.
+                        if buf.is_empty() || buf.len() == last_len {
+                            continue;
+                        }
+                        last_len = buf.len();
+                        let start = buf.len().saturating_sub(PREVIEW_WINDOW_SAMPLES);
+                        let window = buf[start..].to_vec();
+
+                        let Some(eng_arc) = engine::get_engine() else {
+                            continue; // model still loading; try again next tick
+                        };
+                        if !session_active.load(Ordering::SeqCst) {
+                            return;
+                        }
+                        let res = {
+                            let mut eng = eng_arc.lock().unwrap();
+                            eng.transcribe_samples(window, None)
+                        };
+                        // A stop may have landed while we transcribed; don't
+                        // clobber the UI after the session ended.
+                        if !session_active.load(Ordering::SeqCst) {
+                            return;
+                        }
+                        if let Ok(r) = res {
+                            if let Ok(mut env) = jvm.attach_current_thread() {
+                                notify_partial(&mut env, target_ref.as_obj(), &r.text);
+                            }
+                        }
+                    }
+                });
+            }
 
             if let Some(ep) = endpoint {
                 let jvm = state.jvm.clone();
